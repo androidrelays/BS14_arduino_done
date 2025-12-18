@@ -388,10 +388,21 @@ void loop() {
             if (switchToggled) {
               lv_obj_set_pos(switch_69, 2, 3); // UP position
               lv_obj_set_style_bg_color(switch_69, lv_color_hex(0x2196F3), 0);
+              Serial.println("Switch position set to UP");
             } else {
               lv_obj_set_pos(switch_69, 2, 72); // DOWN position
               lv_obj_set_style_bg_color(switch_69, lv_color_hex(0x2196F3), 0);
+              Serial.println("Switch position set to DOWN");
+              // When switch is toggled down, open the breaker (even if locked)
+              if (!breakerstate) {
+                Serial.println("EXECUTING: Auto-opening breaker because switch went down");
+                set_breaker_state(true);
+              }
             }
+            // Force layout update before refresh
+            lv_obj_update_layout(switch_69);
+          } else {
+            Serial.println("ERROR: switch_69 is NULL! Cannot update switch position.");
           }
 
           // If breaker is locked closed and switch is toggled down, open the breaker visually
@@ -401,6 +412,22 @@ void loop() {
 
           // Always update button styles and send status
           update_button_styles();
+          
+          // Re-apply switch position AFTER update_button_styles() to ensure it sticks
+          if (switch_69) {
+            if (switchToggled) {
+              lv_obj_set_pos(switch_69, 2, 3); // UP position
+              Serial.println("Re-applied switch position to UP after update_button_styles");
+            } else {
+              lv_obj_set_pos(switch_69, 2, 72); // DOWN position
+              Serial.println("Re-applied switch position to DOWN after update_button_styles");
+            }
+            // Force layout update, invalidation and refresh to ensure switch position is visible
+            lv_obj_update_layout(switch_69);
+            lv_obj_invalidate(switch_69);
+            lv_refr_now(lv_disp_get_default());
+          }
+          
           send_status_to_flutter();
 
           // Mark stateChanged only if switch state actually changed
